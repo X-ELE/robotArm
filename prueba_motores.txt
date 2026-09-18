@@ -1,0 +1,127 @@
+================================================================================
+GUÍA RÁPIDA DE LABORATORIO: DIAGNÓSTICO Y PRUEBA DE MOTORES PASO A PASO
+Brazo Robótico - Placa MKS Gen v1.4 / RAMPS 1.4 / Drivers A4988 / NEMA 17
+================================================================================
+
+⚠️ REGLA DE ORO DE SEGURIDAD ELÉCTRICA:
+--------------------------------------------------------------------------------
+¡NUNCA CONECTAR NI DESCONECTAR MOTORES CON LA FUENTE DE 12V ENCENDIDA!
+Hacerlo quema instantáneamente el chip driver A4988 por retrofuerza
+contraelectromotriz (arco inductivo). Antes de tocar cables, apaga la fuente.
+--------------------------------------------------------------------------------
+
+
+SÍNTOMA: El motor vibra, zumba o hace pasos pero no gira (incluso en vacío).
+--------------------------------------------------------------------------------
+
+PASO 1: VERIFICAR CABLEADO DE BOBINAS (FASES CRUZADAS) [95% de los casos]
+--------------------------------------------------------------------------------
+Los motores bipolares tienen 2 bobinas (Fase A y Fase B).
+La placa MKS Gen espera en sus 4 pines el orden:
+  Pin 1: Bobina A1  \___ Bobina 1 (da continuidad entre sí)
+  Pin 2: Bobina A2  /
+  Pin 3: Bobina B1  \___ Bobina 2 (da continuidad entre sí)
+  Pin 4: Bobina B2  /
+
+Muchos cables chinos vienen de fábrica como A1 - B1 - A2 - B2 (cables centrales
+cruzados). Si las fases se cruzan, el motor tironea para adelante y atrás
+a la vez: vibra pero no gira.
+
+MÉTODO A: Con Multímetro (Tester en continuidad o resistencia 200 ohms)
+1. Apaga la fuente de 12V y desconecta la ficha del motor de la placa.
+2. Mide continuidad entre Pin 1 y Pin 2: ¿Hace BIP (~2 a 4 ohms)?
+3. Mide continuidad entre Pin 3 y Pin 4: ¿Hace BIP?
+* Si pita entre 1 y 3 (o 2 y 4): ¡ESTÁN CRUZADOS!
+* SOLUCIÓN: Con la punta de un alfiler, levanta la lengüeta plástica del
+  conector e intercambia los cables 2 y 3 para que las bobinas queden contiguas
+  (1 con 2, y 3 con 4).
+
+MÉTODO B: Sin Multímetro (Prueba del freno magnético)
+1. Con el motor desconectado en la mano, gira el eje con los dedos (gira suave).
+2. Cortocircuita con un clip metálico los pines 1 y 2 de la ficha del motor.
+3. Vuelve a girar el eje:
+   - Si se frena y se pone duro: 1 y 2 son la misma bobina (Correcto).
+   - Si sigue girando liviano: NO son bobina. Prueba puentear 1 y 3 o 1 y 4
+     hasta hallar la pareja que lo frene.
+
+
+PASO 2: DESCARTAR DRIVER DAÑADO (INTERCAMBIO)
+--------------------------------------------------------------------------------
+1. Apaga la fuente de 12V.
+2. Saca el driver del zócalo Z y coloca uno de los drivers de X o Y.
+3. ATENCIÓN A LA ORIENTACIÓN: Verifica que los pines DIR y GND del driver
+   coincidan con la serigrafía de la placa (no ponerlo al revés o se quema).
+4. Vuelve a probar. Si ahora gira, el driver anterior tenía una fase quemada.
+
+
+PASO 3: VERIFICAR LOS 3 JUMPERS DE MICROPASOS
+--------------------------------------------------------------------------------
+1. Con el driver quitado del zócalo Z, mira los pines hembra de la placa.
+2. Debajo del driver DEBEN estar colocados los 3 puentes plásticos (jumpers)
+   en MS1, MS2 y MS3.
+3. Esto configura 1/16 de micropaso (3200 pulsos/vuelta).
+   Si no están colocados, el driver queda en Full Step (1/1) y el motor recibe
+   pulsos 16 veces más rápido de lo que puede arrancar, trabándose al instante.
+
+
+PASO 4: CALIBRAR VOLTAJE DE REFERENCIA (Vref)
+--------------------------------------------------------------------------------
+Si el potenciómetro está al mínimo, el motor no tiene fuerza para arrancar:
+1. Enciende la fuente y conecta el USB a la PC.
+2. Tester en DC 20V:
+   - Punta negra: chasis metálico del puerto USB (Masa/GND).
+   - Punta roja: cabeza metálica del tornillo del potenciómetro del driver.
+3. Valores recomendados:
+   - Driver con resistencia R100 (0.10 ohm): Vref = 0.70V a 0.75V (aprox 0.9A)
+   - Driver con resistencia R050 (0.05 ohm): Vref = 0.35V a 0.40V
+
+
+PASO 5: EJECUTAR EL SCRIPT DE PRUEBA
+--------------------------------------------------------------------------------
+En la terminal de la computadora:
+  cd /home/lms/Proyectos/robotArm
+  python3 test_hardware.py
+
+Opciones del menú:
+  [2] Activar Motores (M17) -> Comprobar que el motor quede duro con torque.
+  [3] Desactivar Motores (M18) -> Comprobar que quede libre y suave.
+  [4] Probar BASE (Eje Z)   -> Envía giro a derecha e izquierda (G1 X15 / G1 X-15).
+  [5] Probar HOMBRO (Eje Y) -> Movimiento adelante y atrás (G1 Y135 / G1 Y105).
+  [6] Probar CODO (Eje X)   -> Movimiento arriba y abajo (G1 Z135 / G1 Z105).
+  [7] Probar PINZA (Gripper)-> Abre y cierra con M3 T600 / M5 T600.
+  [1] Probar Ventilador (D9)-> Verifica refrigeración de los disipadores.
+
+RECORDATORIO DE MAPEO DE EJES EN LA PLACA:
+  - Zócalo Z  -> Motor Base giratoria (G1 X... en el firmware)
+  - Zócalo Y  -> Motor Hombro / Brazo inferior (G1 Y... en el firmware)
+  - Zócalo X  -> Motor Codo / Brazo superior (G1 Z... en el firmware)
+
+
+PASO 6: PINZA EFECTORA (GRIPPER) - MOTOR 28BYJ-48 + PLACA DRIVER ULN2003
+--------------------------------------------------------------------------------
+⚠️ ATENCIÓN CON EL PUERTO:
+En el código pinout.h dice '//RAMPS AUX-1', pero los pines D40, D59, D63, D64
+están físicamente en el conector AUX-2 (conector de 2x5 pines abajo al centro).
+
+SÍNTOMA: "Los LEDs del ULN2003 prenden pero el motor vibra o zumba sin girar".
+CAUSA RAÍZ:
+La librería estándar Stepper.h de Arduino energiza las fases en orden 1-3, 2-3,
+2-4, 1-4. Si se conectan en orden directo 1-2-3-4, energiza bobinas opuestas del
+28BYJ-48 a la vez, causando tironeo electromagnético y vibración sin giro.
+
+SOLUCIÓN: INTERCAMBIAR IN2 E IN3 EN LA PLACA ULN2003.
+
+TABLA DE CONEXIÓN DEFINITIVA (MKS Gen v1.4 AUX-2 ➔ ULN2003):
+  AUX-2 Pin 1 (5V)          -----> Pin '+' (VCC) del ULN2003
+  AUX-2 Pin 2 (GND)         -----> Pin '-' (GND) del ULN2003
+  AUX-2 Pin 6 (D40)         -----> Pin 'IN1' del ULN2003
+  AUX-2 Pin 4 (D63 / A9)    -----> Pin 'IN2' del ULN2003  [¡INTERCAMBIADO!]
+  AUX-2 Pin 3 (D59 / A5)    -----> Pin 'IN3' del ULN2003  [¡INTERCAMBIADO!]
+  AUX-2 Pin 5 (D64 / A10)   -----> Pin 'IN4' del ULN2003
+
+* Jumper de alimentación: Debe estar colocado el jumper de 2 pines al lado de +/-.
+* Recorrido de prueba: El 28BYJ-48 tiene caja reductora 64:1 (~2048 pasos/vuelta).
+  50 pasos dura solo 0.3 seg. Para ver apertura/cierre claros, usar:
+    - Cerrar: M3 T600 (o M3 T800)
+    - Abrir:  M5 T600 (o M5 T800)
+================================================================================

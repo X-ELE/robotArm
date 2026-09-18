@@ -6,10 +6,9 @@
 #include "queue.h"
 #include "command.h"
 
-#include <Stepper.h>
+#include "gripper.h"
 
 
-Stepper stepper(2400, STEPPER_GRIPPER_PIN_0, STEPPER_GRIPPER_PIN_1, STEPPER_GRIPPER_PIN_2, STEPPER_GRIPPER_PIN_3);
 RampsStepper stepperRotate(Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN);
 RampsStepper stepperLower(Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN);
 RampsStepper stepperHigher(X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN);
@@ -39,15 +38,8 @@ void setup() {
   pinMode(Q_DIR_PIN    , OUTPUT);
   pinMode(Q_ENABLE_PIN , OUTPUT);
   
-  //GripperPins
-  pinMode(STEPPER_GRIPPER_PIN_0, OUTPUT);
-  pinMode(STEPPER_GRIPPER_PIN_1, OUTPUT);
-  pinMode(STEPPER_GRIPPER_PIN_2, OUTPUT);
-  pinMode(STEPPER_GRIPPER_PIN_3, OUTPUT);
-  digitalWrite(STEPPER_GRIPPER_PIN_0, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_1, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_2, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_3, LOW);
+  //Gripper (ULN2003 + 28BYJ-48)
+  gripperInit();
 
   
   //reduction of steppers..
@@ -57,7 +49,7 @@ void setup() {
   stepperExtruder.setReductionRatio(32.0 / 9.0, 200 * 16);
   
   //start positions..
-  stepperHigher.setPositionRad(PI / 2.0);  //90°
+  stepperHigher.setPositionRad(-PI / 2.0);  // -90° (coincide con robotGeometry para 0, 120, 120)
   stepperLower.setPositionRad(0);          // 0°
   stepperRotate.setPositionRad(0);         // 0°
   stepperExtruder.setPositionRad(0);
@@ -117,26 +109,18 @@ void cmdDwell(Cmd (&cmd)) {
   delay(int(cmd.valueT * 1000));
 }
 void cmdGripperOn(Cmd (&cmd)) {
-  stepper.setSpeed(5);
-  stepper.step(int(cmd.valueT));
-  delay(50);
-  digitalWrite(STEPPER_GRIPPER_PIN_0, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_1, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_2, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_3, LOW);
-  //printComment("// NOT IMPLEMENTED");
-  //printFault();
+  if (int(cmd.valueT) == 0) {
+    gripperTestSequence();
+  } else {
+    gripperStep(int(cmd.valueT) * 2, 1800);
+  }
 }
 void cmdGripperOff(Cmd (&cmd)) {
-  stepper.setSpeed(5);
-  stepper.step(-int(cmd.valueT));
-  delay(50);
-  digitalWrite(STEPPER_GRIPPER_PIN_0, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_1, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_2, LOW);
-  digitalWrite(STEPPER_GRIPPER_PIN_3, LOW);
-  //printComment("// NOT IMPLEMENTED");
-  //printFault();
+  if (int(cmd.valueT) == 0) {
+    gripperTestSequence();
+  } else {
+    gripperStep(-int(cmd.valueT) * 2, 1800);
+  }
 }
 void cmdStepperOn() {
   setStepperEnable(true);

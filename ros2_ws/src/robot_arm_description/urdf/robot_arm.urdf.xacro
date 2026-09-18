@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_arm">
+
+  <!-- Propiedades geométricas (120 mm entre articulaciones principales) -->
+  <xacro:property name="shank_length" value="0.120" />
+  <xacro:property name="base_height" value="0.065" />
+  <xacro:property name="mesh_scale" value="0.001 0.001 0.001" />
+
+  <!-- Materiales visuales para RViz -->
+  <material name="metallic_dark">
+    <color rgba="0.2 0.25 0.3 1.0"/>
+  </material>
+  <material name="industrial_orange">
+    <color rgba="0.95 0.5 0.1 1.0"/>
+  </material>
+  <material name="accent_blue">
+    <color rgba="0.1 0.6 0.9 1.0"/>
+  </material>
+  <material name="gripper_silver">
+    <color rgba="0.75 0.75 0.75 1.0"/>
+  </material>
+
+  <!-- Eslabón de Referencia Universal (World) -->
+  <link name="world"/>
+
+  <joint name="world_to_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 1. BASE ESTÁTICA -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/base.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="metallic_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.03" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.09" length="0.06"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <origin xyz="0 0 0.03"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- ARTICULACIÓN 1: Rotación de la Base (Eje Z) -->
+  <joint name="joint_base_rotate" type="revolute">
+    <parent link="base_link"/>
+    <child link="socket_link"/>
+    <origin xyz="0 0 ${base_height}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.5708" upper="1.5708" effort="10.0" velocity="1.5"/>
+  </joint>
+
+  <!-- 2. SOPORTE GIRATORIO (SOCKET) -->
+  <link name="socket_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/socket.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="industrial_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <origin xyz="0 0 0.02"/>
+      <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+
+  <!-- ARTICULACIÓN 2: Hombro / Brazo Inferior (Eje X) -->
+  <joint name="joint_lower_arm" type="revolute">
+    <parent link="socket_link"/>
+    <child link="lower_arm_link"/>
+    <origin xyz="0 0 0.03" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.5236" upper="1.5708" effort="15.0" velocity="1.5"/>
+  </joint>
+
+  <!-- 3. BRAZO INFERIOR (LOWER SHANK: 120 mm) -->
+  <link name="lower_arm_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/lowerShank.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="accent_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${shank_length / 2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.02" length="${shank_length}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.25"/>
+      <origin xyz="0 0 ${shank_length / 2}"/>
+      <inertia ixx="0.0004" ixy="0" ixz="0" iyy="0.0004" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- ARTICULACIÓN 3: Codo / Brazo Superior (Eje X) -->
+  <joint name="joint_upper_arm" type="revolute">
+    <parent link="lower_arm_link"/>
+    <child link="upper_arm_link"/>
+    <origin xyz="0 0 ${shank_length}" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.9198" upper="0.7854" effort="15.0" velocity="1.5"/>
+  </joint>
+
+  <!-- 4. BRAZO SUPERIOR (UPPER SHANK: 120 mm) -->
+  <link name="upper_arm_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/upperShank.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="industrial_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 ${shank_length / 2} 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.02" length="${shank_length}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.2"/>
+      <origin xyz="0 ${shank_length / 2} 0"/>
+      <inertia ixx="0.0003" ixy="0" ixz="0" iyy="0.0003" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- ARTICULACIÓN 4: Muñeca / Rotación del Efector (Eje Y) -->
+  <joint name="joint_wrist_rotate" type="revolute">
+    <parent link="upper_arm_link"/>
+    <child link="wrist_link"/>
+    <origin xyz="0 ${shank_length} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="5.0" velocity="2.0"/>
+  </joint>
+
+  <!-- 5. MUÑECA Y BASE DEL GRIPPER -->
+  <link name="wrist_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/gripperBase.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="metallic_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0.02 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.04 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <origin xyz="0 0.02 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- ARTICULACIÓN 5: Pinza Izquierda (Prismática) -->
+  <joint name="joint_gripper_left" type="prismatic">
+    <parent link="wrist_link"/>
+    <child link="gripper_left_finger"/>
+    <origin xyz="-0.015 0.04 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0.0" upper="0.025" effort="5.0" velocity="0.1"/>
+  </joint>
+
+  <link name="gripper_left_finger">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/gripperFinger.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="gripper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0.015 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.03 0.015"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ARTICULACIÓN 6: Pinza Derecha (Mimic / Reflejo simétrico) -->
+  <joint name="joint_gripper_right" type="prismatic">
+    <parent link="wrist_link"/>
+    <child link="gripper_right_finger"/>
+    <origin xyz="0.015 0.04 0" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="0.0" upper="0.025" effort="5.0" velocity="0.1"/>
+    <mimic joint="joint_gripper_left" multiplier="1.0" offset="0.0"/>
+  </joint>
+
+  <link name="gripper_right_finger">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://robot_arm_description/meshes/gripperFinger.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="gripper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0.015 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.03 0.015"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- PUNTO EFECTOR FINAL (TCP - Tool Center Point) -->
+  <link name="tcp_link"/>
+  <joint name="wrist_to_tcp" type="fixed">
+    <parent link="wrist_link"/>
+    <child link="tcp_link"/>
+    <origin xyz="0 0.065 0" rpy="0 0 0"/>
+  </joint>
+
+</robot>

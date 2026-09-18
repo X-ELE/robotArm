@@ -65,6 +65,23 @@ void Interpolation::setInterpolation(Point p0, Point p1, float av) {
     dist = e; 
   }
   
+  if (dist < 0.001) {
+    xStartmm = p1.xmm;
+    yStartmm = p1.ymm;
+    zStartmm = p1.zmm;
+    eStartmm = p1.emm;
+    xDelta = 0;
+    yDelta = 0;
+    zDelta = 0;
+    eDelta = 0;
+    xPosmm = p1.xmm;
+    yPosmm = p1.ymm;
+    zPosmm = p1.zmm;
+    ePosmm = p1.emm;
+    state = 1;
+    return;
+  }
+  
   if (v < 5) { //includes 0 = default value
     v = sqrt(dist) * 10; //set a good value for v
   }

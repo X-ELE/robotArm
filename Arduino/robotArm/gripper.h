@@ -1,10 +1,11 @@
+#ifndef GRIPPER_H_
+#define GRIPPER_H_
+
 #include <Arduino.h>
 
+void gripperInit();
+void gripperOff();
+void gripperStep(int steps, int stepDelayUs = 1800);
+void gripperTestSequence();
 
-void gripperOpen(int i = 1000) {
-  stepper.step(i);
-}
-
-void gripperClose(int i = 1000) {
-  stepper.step(-i);
-}
+#endif // GRIPPER_H_

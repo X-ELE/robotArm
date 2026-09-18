@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía de Laboratorio - Puesta en Marcha Brazo Robótico</title>
+<style>
+    @media print {
+        body { font-size: 11pt; }
+        .no-print { display: none; }
+        .page-break { page-break-before: always; }
+    }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        line-height: 1.5;
+        color: #222;
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    h1.doc-title { text-align: center; color: #1a365d; font-size: 22pt; margin-bottom: 4px; text-transform: uppercase; }
+    h2.doc-subtitle { text-align: center; color: #2b6cb0; font-size: 15pt; margin-top: 0; }
+    h3.doc-h3 { color: #2d3748; border-bottom: 2px solid #cbd5e0; padding-bottom: 4px; margin-top: 24px; font-size: 13pt; text-transform: uppercase; }
+    h4.doc-h4 { color: #4a5568; margin-top: 16px; font-size: 11pt; }
+    .callout { padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: 10.5pt; }
+    .caution { background-color: #fff5f5; border-left: 5px solid #e53e3e; color: #742a2a; }
+    .warning { background-color: #fffaf0; border-left: 5px solid #dd6b20; color: #7b341e; }
+    table.styled-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 10pt; }
+    table.styled-table th, table.styled-table td { border: 1px solid #a0aec0; padding: 6px 10px; text-align: left; }
+    table.styled-table th { background-color: #edf2f7; color: #2d3748; font-weight: bold; }
+    .checkbox { margin: 6px 0; font-size: 10.5pt; }
+    input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; }
+    code { background-color: #edf2f7; padding: 2px 4px; border-radius: 4px; font-family: Consolas, monospace; font-size: 9.5pt; }
+    .btn-print {
+        background-color: #2b6cb0; color: white; border: none; padding: 10px 20px;
+        font-size: 12pt; border-radius: 6px; cursor: pointer; float: right; font-weight: bold;
+    }
+    .btn-print:hover { background-color: #2c5282; }
+</style>
+</head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
+<h1 class="doc-title">GUÍA DE PRÁCTICA DE LABORATORIO</h1>
+<h2 class="doc-subtitle">PUESTA EN MARCHA, CALIBRACIÓN Y DIAGNÓSTICO DE HARDWARE</h2>
+<h3 class="doc-h3">Brazo Robótico Articulado - Controlador MKS Gen v1.4</h3>
+<br/>
+<hr/>
+<br/>
+<p>**Asignatura:** Robótica Industrial / Mecatrónica / Sistemas de Control  </p>
+<p>**Puesto de Trabajo / Banco N°:** _________  </p>
+<p>**Integrantes del Grupo:**  </p>
+<p>1. __________________________________________________  </p>
+<p>2. __________________________________________________  </p>
+<p>3. __________________________________________________  </p>
+<p>**Fecha de Realización:** ____ / ____ / 202__   **Calificación:** _________  </p>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">1. OBJETIVOS DE LA PRÁCTICA</h2>
+<br/>
+<p>Al finalizar esta práctica, el estudiante será capaz de:</p>
+<p>1. Identificar y verificar las conexiones de potencia, control y actuadores en una placa controladora **MKS Gen v1.4**.</p>
+<p>2. Identificar pares de bobinas en motores paso a paso bipolares NEMA 17 mediante multímetro digital.</p>
+<p>3. Comprender el funcionamiento de los controladores conmutados (*chopper*) y **calibrar con precisión el voltaje de referencia ($V_{ref}$)** en drivers A4988 / DRV8825.</p>
+<p>4. Ejecutar pruebas dinámicas aisladas por software y diagnosticar fallas típicas (pérdida de pasos, sobrecalentamiento, inversión de giro).</p>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">2. NORMAS CRÍTICAS DE SEGURIDAD ELÉCTRICA</h2>
+<br/>
+<div class="callout caution"><strong>⚠️ ADVERTENCIA CRÍTICA:</strong>
+<p>**REGLA DE ORO DE LOS CONTROLADORES PASO A PASO:**</p>
+<blockquote class="quote">**JAMÁS** conecte ni desconecte el cable de un motor paso a paso con la fuente de 12V encendida. La desconexión en caliente genera un arco de fuerza contraelectromotriz (f.c.e.m.) que **quema instantáneamente el driver A4988**. Antes de tocar cualquier cable, apague la fuente.</blockquote>
+<br/>
+<div class="callout warning"><strong>⚡ PRECAUCIÓN TÉCNICA:</strong>
+<p>**TRAMPA DE MEDICIÓN DE CORRIENTE:**</p>
+<blockquote class="quote">Los drivers A4988 son fuentes conmutadas reductoras (*buck chopper*). **NO intente medir la corriente de los motores conectando un amperímetro en serie con la fuente de 12V buscando 1.0 A**. </blockquote>
+<blockquote class="quote">Si la fuente de 12V marca 1.0 A para un solo motor, por conservación de potencia la bobina estará recibiendo más de **4 Amperios**, destruyendo el driver y quemando el motor. **La corriente se calibra exclusivamente mediante la medición de $V_{ref}$ en Voltios DC**.</blockquote>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">3. INSTRUMENTAL Y MATERIALES REQUERIDOS</h2>
+<br/>
+<li>1x Brazo robótico con placa MKS Gen v1.4 y 4x drivers A4988 (o DRV8825).</li>
+<li>1x Fuente de alimentación regulada 12V DC (mínimo 5A).</li>
+<li>1x Multímetro digital con puntas de prueba fina.</li>
+<li>1x Destornillador plano de ajuste fino (preferentemente cerámico o con mango aislado).</li>
+<li>1x Cable USB tipo B a PC con Linux / Windows.</li>
+<li>Lupa o cámara de smartphone (para inspección de resistencias SMD).</li>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">4. PROCEDIMIENTO EXPERIMENTAL</h2>
+<br/>
+<h3 class="doc-h3">FASE I: Inspección con Placa Desenergizada (Checklist Inicial)</h3>
+<br/>
+<p>*Realice las siguientes verificaciones con la fuente de 12V y el cable USB completamente desconectados. Marque con una cruz cada punto verificado:*</p>
+<br/>
+<div class="checkbox"><input type="checkbox"> **Alimentación:** Bornera verde `12V/24V IN`. Polaridad verificada: borne positivo (+) conectado a +12V y borne negativo (-) conectado a masa (GND). Cables firmemente ajustados sin filamentos sueltos.</div>
+<div class="checkbox"><input type="checkbox"> **Configuración de Micropasos:** Se retiraron temporalmente los drivers y se verificó que los **3 jumpers (MS1, MS2, MS3)** debajo de cada zócalo (`X`, `Y`, `Z`, `E0`) estén colocados. Esto configura **1/16 de micropaso** (3200 pasos/vuelta).</div>
+<div class="checkbox"><input type="checkbox"> **Orientación de los Drivers:** Se verificó que los pines `DIR` y `GND` de la plaquita del driver coincidan exactamente con la serigrafía `DIR` y `GND` de la placa MKS Gen v1.4. *(¡Un driver invertido se destruye al encender!)*.</div>
+<div class="checkbox"><input type="checkbox"> **Mapeo de Motores:** Se conectaron los cables de 4 pines en sus zócalos correctos:</div>
+<p>  - Zócalo **Z** $\rightarrow$ Motor de la Base giratoria</p>
+<p>  - Zócalo **Y** $\rightarrow$ Motor del Hombro (brazo inferior)</p>
+<p>  - Zócalo **X** $\rightarrow$ Motor del Codo (antebrazo)</p>
+<p>  - Zócalo **E0** $\rightarrow$ Motor de la Muñeca</p>
+<p>  - Conector **AUX-1** $\rightarrow$ Pines D40, D59, D63, D64 hacia placa de la pinza (28BYJ-48)</p>
+<p>  - Bornera **D9** $\rightarrow$ Ventilador de 12V apuntando a los disipadores</p>
+<br/>
+<hr/>
+<br/>
+<h3 class="doc-h3">FASE II: Identificación de Bobinas de los Motores NEMA 17</h3>
+<br/>
+<p>*Los motores paso a paso bipolares poseen dos bobinas independientes (Fase A y Fase B). Para que el motor gire suavemente, cada par de cables debe corresponder a una misma bobina.*</p>
+<br/>
+<p>1. Desconecte el motor de la placa.</p>
+<p>2. Coloque el multímetro en **modo continuidad (bip) o medición de resistencia ($200\,\Omega$)**.</p>
+<p>3. Mida entre los pines del conector de 4 terminales:</p>
+<p>   - Los dos terminales que den continuidad (típicamente entre $1.5\,\Omega$ y $4.0\,\Omega$) pertenecen a la **Bobina 1**.</p>
+<p>   - Los otros dos terminales que den continuidad pertenecen a la **Bobina 2**.</p>
+<p>   - Entre la Bobina 1 y la Bobina 2 la resistencia debe ser **infinita (circuito abierto)**.</p>
+<br/>
+<p>**Registro de Mediciones de Bobinas:**</p>
+<li>Motor Base (Z): Resistencia Fase A: ________ $\Omega$ | Resistencia Fase B: ________ $\Omega$</li>
+<li>Motor Hombro (Y): Resistencia Fase A: ________ $\Omega$ | Resistencia Fase B: ________ $\Omega$</li>
+<li>Motor Codo (X): Resistencia Fase A: ________ $\Omega$ | Resistencia Fase B: ________ $\Omega$</li>
+<br/>
+<hr/>
+<br/>
+<h3 class="doc-h3">FASE III: Calibración del Voltaje de Referencia ($V_{ref}$)</h3>
+<br/>
+<h4 class="doc-h4">Fundamento Teórico:</h4>
+<p>Para drivers A4988 con resistencia sensora de corriente $R_{\text{sense}}$, la corriente de pico por fase viene dada por:</p>
+<p>$$I_{\text{max}} = \frac{V_{ref}}{8 \times R_{\text{sense}}} \quad \Longrightarrow \quad V_{ref} = I_{\text{deseada}} \times 8 \times R_{\text{sense}}$$</p>
+<br/>
+<p>1. **Inspección Visual:** Observe las dos pequeñas resistencias rectangulares negras al lado del chip del driver. Lea el código impreso:</p>
+<p>   - Si dice **`R100`**, la resistencia es de **$0.10\,\Omega$** $\rightarrow$ **$V_{ref} = 0.8 \times I_{\text{deseada}}$**.</p>
+<p>   - Si dice **`R050`**, la resistencia es de **$0.05\,\Omega$** $\rightarrow$ **$V_{ref} = 0.4 \times I_{\text{deseada}}$**.</p>
+<p>2. **Procedimiento de Medición:**</p>
+<p>   - Conecte el cable USB a la PC y encienda la fuente de 12V.</p>
+<p>   - Ponga el multímetro en **Voltaje Continuo (Escala DC 2V o 20V)**.</p>
+<p>   - Coloque la **punta negra (COM)** firmemente en el contacto metálico exterior del conector USB o en el borne GND de la fuente.</p>
+<p>   - Apoye suavemente la **punta roja** en la cabeza metálica del tornillo del potenciómetro de ajuste del driver.</p>
+<p>   - Con el destornillador, gire muy lentamente el tornillo hasta alcanzar el valor objetivo. *(Giro horario suele aumentar; antihorario disminuye).*</p>
+<br/>
+<h4 class="doc-h4">Tabla de Registro de Calibración de Corriente:</h4>
+<br/>
+<table class="styled-table">
+<tr><th>Eje / Zócalo</th><th>Driver</th><th>Código $R_s$</th><th>$I_{\text{objetivo}}$</th><th>$V_{ref}$ Teórico</th><th>$V_{ref}$ Medido Final</th><th>Firma Verificación Docente</th></tr>
+<tr><td>**Z (Base)**</td><td>A4988</td><td></td><td>0.90 A</td><td></td><td></td><td></td></tr>
+<tr><td>**Y (Hombro)**</td><td>A4988</td><td></td><td>1.00 A</td><td></td><td></td><td></td></tr>
+<tr><td>**X (Codo)**</td><td>A4988</td><td></td><td>1.00 A</td><td></td><td></td><td></td></tr>
+<tr><td>**E0 (Muñeca)**</td><td>A4988</td><td></td><td>0.75 A</td><td></td><td></td><td></td></tr>
+</table>
+<br/>
+<hr/>
+<br/>
+<h3 class="doc-h3">FASE IV: Pruebas Dinámicas Individuales por Software</h3>
+<br/>
+<p>*Una vez verificada la calibración eléctrica, se procede a las pruebas mecánicas aisladas.*</p>
+<br/>
+<p>1. Abra una terminal en la PC y navegue hasta la carpeta del proyecto:</p>
+<p>   ```bash</p>
+<p>   cd /home/lms/Proyectos/robotArm</p>
+<p>   python3 test_hardware.py</p>
+<p>   ```</p>
+<p>2. Ejecute en orden cada una de las siguientes opciones del menú interactivo y anote sus observaciones:</p>
+<br/>
+<h4 class="doc-h4">Checklist de Pruebas Dinámicas:</h4>
+<div class="checkbox"><input type="checkbox"> **Opción [1] Prueba del Ventilador (D9):** ¿El ventilador encendió durante 3 segundos con buen flujo de aire hacia los disipadores? *(Sí / No)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [2] Prueba de Enclave (`M17`):** Al activar los motores, intente mover suavemente cada eje con la mano. ¿Se encuentran todos bloqueados con torque de retención firme? *(Sí / No)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [3] Prueba de Desactivación (`M18`):** Al desactivar los motores, ¿quedan todos los ejes completamente libres y suaves para moverlos a mano? *(Sí / No)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [4] Movimiento Base (Z):** ¿La base giró a la derecha e izquierda sin tirones ni pérdidas de paso? *(Correcto / Invierte giro / Traba)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [5] Movimiento Hombro (Y):** ¿El brazo inferior se desplazó adelante y atrás suavemente? *(Correcto / Invierte giro / Traba)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [6] Movimiento Codo (X):** ¿El brazo superior subió y bajó correctamente? *(Correcto / Invierte giro / Traba)*: _________</div>
+<div class="checkbox"><input type="checkbox"> **Opción [7] y [8] Muñeca y Pinza:** ¿La pinza abrió y cerró completamente? *(Sí / No)*: _________</div>
+<br/>
+<p>3. **Verificación Térmica:** Deje los motores enclavados (`M17`) durante 5 minutos. Toque el cuerpo metálico de los motores con el dorso del dedo:</p>
+<p>   - Motor Base: [ ] Frío [ ] Tibio (~40°C) [ ] Caliente quemante (>70°C)</p>
+<p>   - Motor Hombro: [ ] Frío [ ] Tibio (~40°C) [ ] Caliente quemante (>70°C)</p>
+<p>   - Motor Codo: [ ] Frío [ ] Tibio (~40°C) [ ] Caliente quemante (>70°C)</p>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">5. GUÍA DE RESOLUCIÓN DE FALLAS (TROUBLESHOOTING)</h2>
+<br/>
+<p>Si durante las pruebas ocurre algún problema, consulte la siguiente tabla antes de llamar al docente:</p>
+<br/>
+<table class="styled-table">
+<tr><th>Falla Observada</th><th>Causa Raíz Probable</th><th>Acción Correctiva Obligatoria</th></tr>
+<tr><td>**El motor vibra intensamente y hace ruido de "zumbido" pero no gira.**</td><td>Bobinas cruzadas en el conector (el cableado no es AABB).</td><td>**Apague la fuente de 12V**. Revise con el tester la continuidad y reconecte los terminales para asegurar que la bobina 1 esté en pines 1-2 y la bobina 2 en pines 3-4.</td></tr>
+<tr><td>**El motor gira en sentido contrario al indicado.**</td><td>Polaridad de bobina invertida.</td><td>**Apague la fuente de 12V**. Retire el conector de 4 pines del motor, gírelo 180° y vuelva a insertarlo.</td></tr>
+<tr><td>**Un motor queda completamente blando (sin torque) al enviar `M17`.**</td><td>Falso contacto en pines o driver descalibrado/dañado.</td><td>Verifique que el conector esté firme. Mida $V_{ref}$; si marca 0.0V, el potenciómetro está al mínimo o el driver está quemado.</td></tr>
+<tr><td>**El motor pierde pasos o se frena a mitad de recorrido.**</td><td>Exceso de apriete en tornillos mecánicos o $V_{ref}$ insuficiente.</td><td>Mueva el brazo a mano con la máquina apagada. Si está duro, afloje 1/4 de vuelta los tornillos de los rodamientos. Si está suave, suba $V_{ref}$ un 10%.</td></tr>
+<tr><td>**El motor o driver quema al tacto en menos de 2 minutos.**</td><td>$V_{ref}$ excesivo.</td><td>Baje inmediatamente el potenciómetro con el multímetro a $0.60\text{ V}$. Verifique que el ventilador de refrigeración esté funcionando.</td></tr>
+</table>
+<br/>
+<hr/>
+<br/>
+<h2 class="doc-subtitle">6. CUESTIONARIO DE EVALUACIÓN CONCEPTUAL</h2>
+<br/>
+<p>*Responda de forma clara y fundamentada:*</p>
+<br/>
+<p>1. ¿Por qué es destructivo desconectar el conector de un motor paso a paso mientras la placa está recibiendo alimentación de 12V? Explique el fenómeno electromagnético involucrado.  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<br/>
+<p>2. Si un motor NEMA 17 tiene una resistencia por bobina de $2\,\Omega$ y se calibra para una corriente de $1.0\text{ A}$, ¿cuánta potencia disipa la bobina? Si la fuente entrega $12\text{ V}$, ¿por qué la corriente que entrega la fuente de alimentación no es de $1.0\text{ A}$?  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<br/>
+<p>3. ¿Qué función cumplen los jumpers de micropasos debajo del driver A4988 y qué diferencia existe entre operar a paso completo (*Full Step*) y a 1/16 de micropaso?  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<p>   _________________________________________________________________________________________________________  </p>
+<br/>
+<hr/>
+<br/>
+<p>**Conclusión del Grupo sobre el Estado del Robot:**  </p>
+<p>_____________________________________________________________________________________________________________  </p>
+<p>_____________________________________________________________________________________________________________  </p>
+<br/>
+<p>**Firma del Docente a Cargo:** _________________________ **Fecha:** ____ / ____ / 202__</p>
+<br/>
+</body>
+</html>
